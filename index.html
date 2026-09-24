@@ -26,58 +26,6 @@
 
             @page {
                 size: A4;
-                margin: 5mm; /* Margem reduzida para dar mais espaço para a grade */
-            }
-
-            #print-container {
-                display: block !important;
-            }
-
-            .page-a4 {
-                display: grid;
-                grid-template-columns: repeat(6, 1fr); /* 5 colunas */
-                grid-template-rows: repeat(11, 1fr); /* 12 fileiras */
-                height: 280mm; /* Altura segura (297mm do A4 - 10mm de margens globais - 2mm de folga) para evitar página extra */
-                width: 100%;
-                gap: 0;
-                break-after: page; 
-                page-break-after: always; /* Garantia extra de quebra de página */
-            }
-
-            .voucher-box {
-                border: 1px dashed #666; 
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                box-sizing: border-box;
-                padding: 4px; /* Reduzido para caber melhor na grade 5x12 */
-                text-align: center;
-                overflow: hidden;
-            }
-
-            .voucher-title {
-                font-size: 8px; /* Fonte menor para caixas mais estreitas */
-                color: #555;
-                margin-bottom: 2px;
-                text-transform: uppercase;
-                white-space: nowrap;
-            }
-
-            .voucher-code {
-                font-size: 14px; /* Fonte ajustada para 5 colunas */
-                font-weight: bold;
-                letter-spacing: 1px;
-                color: #000;
-            }
-        }
-
-        #print-container {
-            display: none;
-        }
-        @media print {
-            @page {
-                size: A4;
                 margin: 0; 
             }
 
@@ -92,6 +40,10 @@
 
             .app-container, footer {
                 display: none !important;
+            }
+
+            #print-container {
+                display: block !important;
             }
 
             .print-page {
@@ -109,6 +61,48 @@
             .print-page:last-child {
                 page-break-after: auto !important;
             }
+
+            .page-a4 {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr); 
+                grid-template-rows: repeat(11, 1fr); 
+                height: 280mm; 
+                width: 100%;
+                gap: 0;
+                break-after: page; 
+                page-break-after: always; 
+            }
+
+            .voucher-box {
+                border: 1px dashed #666; 
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                box-sizing: border-box;
+                padding: 4px; 
+                text-align: center;
+                overflow: hidden;
+            }
+
+            .voucher-title {
+                font-size: 8px; 
+                color: #555;
+                margin-bottom: 2px;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+
+            .voucher-code {
+                font-size: 14px; 
+                font-weight: bold;
+                letter-spacing: 1px;
+                color: #000;
+            }
+        }
+
+        #print-container {
+            display: none;
         }
     </style>
 </head>
@@ -118,39 +112,40 @@
     <div class="flex-grow flex items-center justify-center w-full px-4">
         <div id="ui-container" class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
             
-            <div class="mb-6 flex justify-center">
-            </svg>
+            <div class="mb-6 flex justify-center text-green-600">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+            </div>
+
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Gerador de Etiquetas</h1>
+            <p class="text-gray-600 text-sm mb-8">
+                Selecione o arquivo PDF de vouchers. O sistema irá extrair os códigos e preparar a impressão.
+            </p>
+
+            <label for="pdf-upload" class="flex flex-col items-center px-4 py-6 bg-gray-50 text-green-600 rounded-lg shadow-inner border border-gray-200 cursor-pointer hover:bg-green-50 transition-colors">
+                <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <span class="mt-2 text-sm font-semibold leading-normal">Anexar arquivo PDF</span>
+                <input type='file' id="pdf-upload" class="hidden" accept="application/pdf" />
+            </label>
+
+            <div id="status-message" class="mt-4 text-sm font-medium h-6"></div>
+
+            <button id="print-button" class="hidden mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Imprimir Etiquetas
+            </button>
         </div>
-
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Gerador de Etiquetas</h1>
-        <p class="text-gray-600 text-sm mb-8">
-            Selecione o arquivo PDF de vouchers. O sistema irá extrair os códigos e preparar a impressão.
-        </p>
-
-        <label for="pdf-upload" class="flex flex-col items-center px-4 py-6 bg-gray-50 text-green-600 rounded-lg shadow-inner border border-gray-200 cursor-pointer hover:bg-green-50 transition-colors">
-            <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-            </svg>
-            <span class="mt-2 text-sm font-semibold leading-normal">Anexar arquivo PDF</span>
-            <input type='file' id="pdf-upload" class="hidden" accept="application/pdf" />
-        </label>
-
-        <div id="status-message" class="mt-4 text-sm font-medium h-6"></div>
-
-        <button id="print-button" class="hidden mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-            </svg>
-            Imprimir Etiquetas
-        </button>
     </div>
-    </div> <!-- Fim do Wrapper centralizador -->
 
     <!-- Rodapé / Footer Fixo na Tela -->
     <footer id="main-footer" class="w-full text-center py-6 text-gray-500 text-xs sm:text-sm">
-        <p> Gerador de Vouchers V2
-            © 2026 Pledge Tecnologias Brasil LTDA, CNPJ: 58.129.596/0001-04 </p> 
-            <p> Para reportar um bug ou contratar nossos serviços, entre em contato:</p>
+        <p>Gerador de Vouchers V2.1 © 2026 Pledge Tecnologias Brasil LTDA, CNPJ: 58.129.596/0001-04</p>
+        <p>Para reportar um bug ou contratar nossos serviços, entre em contato:</p>
         <p class="mt-1">WhatsApp: (19) 9 8181-9846 | E-mail: consulting@pledge.ventures</p>
     </footer>
 
@@ -158,6 +153,15 @@
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const fileInput = document.getElementById('pdf-upload');
+        const statusMessage = document.getElementById('status-message');
+        const printContainer = document.getElementById('print-container');
+        const printButton = document.getElementById('print-button');
+
+        const COLS = 6;
+        const ROWS = 11;
+        const VOUCHERS_PER_PAGE = COLS * ROWS; 
 
         fileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
@@ -172,22 +176,23 @@
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
                 let extractedCodes = [];
 
-                // Lista negra unificada (sem acentos)
                 const blackList = [
                     'criado', 'codigo', 'numero', 'status', 
                     'exclui', 'editar', 'baixar', 'fechar', 'acesso', 
                     'cartao', 'voltar', 'salvar', 'gerado', 'ativos', 'plano', 'planos'
                 ];
 
-                // Inicializa o worker do Tesseract UMA ÚNICA VEZ para todo o arquivo
                 statusMessage.textContent = "Iniciando motor de IA...";
-                const worker = await Tesseract.createWorker('por');
+                // Inicialização robusta compatível com Tesseract v5
+                const worker = await Tesseract.createWorker('por', 1, {
+                    logger: m => {} // Oculta logs excessivos no console
+                });
 
                 for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                     try {
                         const page = await pdf.getPage(pageNum);
-                        
                         statusMessage.textContent = `Lendo página ${pageNum} de ${pdf.numPages} com IA...`;
+                        
                         const scale = 2.5;
                         const viewport = page.getViewport({ scale: scale });
                         const canvas = document.createElement('canvas');
@@ -197,11 +202,9 @@
 
                         await page.render({ canvasContext: context, viewport: viewport }).promise;
                         
-                        // Executa o OCR diretamente na página convertida em imagem
-                        const { data: { text } } = await worker.recognize(canvas);
-                        const pageText = text || "";
+                        const ret = await worker.recognize(canvas);
+                        const pageText = ret.data.text || "";
 
-                        // Remove acentos e símbolos, transformando em espaços
                         const cleanText = pageText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, ' ');
                         const words = cleanText.split(/\s+/);
                         
@@ -218,7 +221,6 @@
                     }
                 }
 
-                // Desliga o worker de IA após terminar todas as páginas
                 await worker.terminate();
 
                 extractedCodes = [...new Set(extractedCodes)];
@@ -240,6 +242,7 @@
                 fileInput.value = "";
             }
         });
+
         printButton.addEventListener('click', () => {
             window.print();
         });
@@ -257,6 +260,7 @@
 
             for (let p = 0; p < totalPages; p++) {
                 const pageElement = document.createElement('div');
+                // Aplica a classe correta usada no CSS de impressão
                 pageElement.className = 'page-a4';
 
                 for (let i = 0; i < VOUCHERS_PER_PAGE; i++) {
