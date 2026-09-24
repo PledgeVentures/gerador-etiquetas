@@ -158,15 +158,6 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        const fileInput = document.getElementById('pdf-upload');
-        const statusMessage = document.getElementById('status-message');
-        const printContainer = document.getElementById('print-container');
-        const printButton = document.getElementById('print-button');
-
-        const COLS = 6;
-        const ROWS = 11;
-        const VOUCHERS_PER_PAGE = COLS * ROWS; 
-
         fileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -187,51 +178,52 @@
                     'cartao', 'voltar', 'salvar', 'gerado', 'ativos', 'plano', 'planos'
                 ];
 
-               for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                    const page = await pdf.getPage(pageNum);
-                    const textContent = await page.getTextContent();
-                    
-                    let pageText = textContent.items.map(item => item.str).join(' ');
+                // Inicializa o worker do Tesseract UMA ÚNICA VEZ para todo o arquivo
+                statusMessage.textContent = "Iniciando motor de IA...";
+                const worker = await Tesseract.createWorker('por');
 
-                    // Se o PDF for baseado em imagem ou a página estiver praticamente vazia, ativa o OCR
-                    if (!pageText || pageText.trim().length < 5) {
-                        statusMessage.textContent = `Lendo PDF gráfico (Página ${pageNum}) com IA...`;
-                        const scale = 2.5;
-                        const viewport = page.getViewport({ scale: scale });
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-
-                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    try {
+                        const page = await pdf.getPage(pageNum);
+                        const textContent = await page.getTextContent();
                         
-                        try {
-                            const worker = await Tesseract.createWorker('por');
-                            const { data: { text } } = await worker.recognize(canvas);
-                            await worker.terminate();
-                            pageText = text || ""; // Garante que se vier vazio, vira string vazia em vez de quebrar
-                        } catch (ocrError) {
-                            console.warn(`Aviso: Falha no OCR da página ${pageNum}, pulando...`, ocrError);
-                            pageText = ""; // Se o OCR falhar na página em branco, apenas ignora e segue a vida
-                        }
-                    }
+                        let pageText = textContent.items.map(item => item.str).join(' ');
 
-                    // 1. Remove acentos e substitui símbolos por espaços
-                    const cleanText = pageText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, ' ');
-                    
-                    // 2. Fatia o texto em palavras isoladas
-                    const words = cleanText.split(/\s+/);
-                    
-                    words.forEach(word => {
-                        if (/^[a-zA-Z0-9]{6}$/.test(word)) {
-                            const wordParaChecagem = word.toLowerCase();
+                        // Se o texto nativo for muito curto (página gráfica ou em branco), usa o OCR
+                        if (!pageText || pageText.trim().length < 5) {
+                            statusMessage.textContent = `Lendo página ${pageNum} de ${pdf.numPages} com IA...`;
+                            const scale = 2.5;
+                            const viewport = page.getViewport({ scale: scale });
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+
+                            await page.render({ canvasContext: context, viewport: viewport }).promise;
                             
-                            if (!blackList.includes(wordParaChecagem)) {
-                                extractedCodes.push(word);
-                            }
+                            const { data: { text } } = await worker.recognize(canvas);
+                            pageText = text || "";
                         }
-                    });  
+
+                        // Remove acentos e símbolos, transformando em espaços
+                        const cleanText = pageText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, ' ');
+                        const words = cleanText.split(/\s+/);
+                        
+                        words.forEach(word => {
+                            if (/^[a-zA-Z0-9]{6}$/.test(word)) {
+                                const wordParaChecagem = word.toLowerCase();
+                                if (!blackList.includes(wordParaChecagem)) {
+                                    extractedCodes.push(word);
+                                }
+                            }
+                        });  
+                    } catch (pageError) {
+                        console.warn(`Ignorando erro na página ${pageNum}:`, pageError);
+                    }
                 }
+
+                // Desliga o worker de IA após terminar todas as páginas
+                await worker.terminate();
 
                 extractedCodes = [...new Set(extractedCodes)];
 
