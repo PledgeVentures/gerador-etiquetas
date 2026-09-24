@@ -16,7 +16,7 @@
 
         /* Configurações específicas para a hora de imprimir */
         @media print {
-            #ui-container { display: none !important; }
+            #ui-container, #main-footer { display: none !important; }
             
             body, html {
                 background-color: white !important;
@@ -36,7 +36,7 @@
             .page-a4 {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(10, 1fr);
+                grid-template-rows: repeat(13, 1fr);
                 height: 277mm; 
                 width: 100%;
                 gap: 0;
@@ -50,7 +50,7 @@
                 justify-content: center;
                 align-items: center;
                 box-sizing: border-box;
-                padding: 10px;
+                padding: 8px;
                 text-align: center;
             }
 
@@ -74,13 +74,13 @@
         }
     </style>
 </head>
-<body class="h-screen flex items-center justify-center">
+<body class="min-h-screen flex flex-col justify-between items-center w-full">
 
-    <div id="ui-container" class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-        
-        <div class="mb-6 flex justify-center">
-            <svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+    <!-- Wrapper para centralizar verticalmente o conteúdo principal -->
+    <div class="flex-grow flex items-center justify-center w-full px-4">
+        <div id="ui-container" class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+            
+            <div class="mb-6 flex justify-center">
             </svg>
         </div>
 
@@ -106,6 +106,13 @@
             Imprimir Etiquetas
         </button>
     </div>
+    </div> <!-- Fim do Wrapper centralizador -->
+
+    <!-- Rodapé / Footer Fixo na Tela -->
+    <footer id="main-footer" class="w-full text-center py-6 text-gray-500 text-xs sm:text-sm">
+        <p>© 2026 Pledge Ventures. Para reportar um bug ou contratar nossos serviços, entre em contato:</p>
+        <p class="mt-1">WhatsApp: (19) 9 8181-9846 | E-mail: consulting@pledge.ventures</p>
+    </footer>
 
     <div id="print-container"></div>
 
@@ -118,7 +125,7 @@
         const printButton = document.getElementById('print-button');
 
         const COLS = 3;
-        const ROWS = 10;
+        const ROWS = 13;
         const VOUCHERS_PER_PAGE = COLS * ROWS; 
 
         fileInput.addEventListener('change', async (event) => {
@@ -219,12 +226,4 @@
         }
     </script>
 </body>
-      <footer>
-    <hr>
-    <small style="color: #777;">
-        &copy; 2026 Pledge Ventures. Para reportar um bug ou contratar nossos serviços, entre em contato: <br>
-        WhatsApp: <a href="https://wa.me/5519981819846" style="color: #777;">(19) 9 8181-9846</a> | 
-        E-mail: <a href="mailto:consulting@pledge.ventures" style="color: #777;">consulting@pledge.ventures</a>
-    </small>
-</footer>
 </html>
