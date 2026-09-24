@@ -148,7 +148,8 @@
 
     <!-- Rodapé / Footer Fixo na Tela -->
     <footer id="main-footer" class="w-full text-center py-6 text-gray-500 text-xs sm:text-sm">
-        <p> Gerador de Vouchers V1.6 © 2026 Pledge Tecnologias Brasil LTDA | CNPJ: 58.129.596/0001-04 Para reportar um bug ou contratar nossos serviços, entre em contato:</p>
+        <p> Gerador de Vouchers V1.7 ©2026 Pledge Tecnologias Brasil LTDA | CNPJ: 58.129.596/0001-04 </p> 
+            <p> Para reportar um bug ou contratar nossos serviços, entre em contato:</p>
         <p class="mt-1">WhatsApp: (19) 9 8181-9846 | E-mail: consulting@pledge.ventures</p>
     </footer>
 
@@ -185,22 +186,32 @@
                     
                     const pageText = textContent.items.map(item => item.str).join(' ');
                     
-                    const words = pageText.split(/[^a-zA-Z0-9]+/);
+                    // 1. Remove acentos (CÓDIGO vira CODIGO) e substitui símbolos por espaços
+                    const cleanText = pageText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, ' ');
+                    
+                    // 2. Fatia o texto em palavras isoladas
+                    const words = cleanText.split(/\s+/);
+                    
+                    // 3. Sua lista negra unificada (sem acentos)
+                    const blackList = [
+                        'criado', 'codigo', 'numero', 'status', 
+                        'exclui', 'editar', 'baixar', 'fechar', 'acesso', 
+                        'cartao', 'voltar', 'salvar', 'gerado', 'ativos', 'plano', 'planos'
+                    ];
                     
                     words.forEach(word => {
-                        if (word.length === 6) {
-                            const cleanWord = word.toLowerCase();
-                            const blackList = [
-                                'criado', 'codigo', 'código', 'numero', 'status', 
-                                'exclui', 'editar', 'baixar', 'fechar', 'acesso', 
-                                'cartao', 'voltar', 'salvar', 'gerado', 'ativos', 'plano'
-                            ];
+                        // 4. Regra regex que aceita maiúsculas, minúsculas e números
+                        if (/^[a-zA-Z0-9]{6}$/.test(word)) {
                             
-                            if (!blackList.includes(cleanWord) && /^[a-z0-9]{6}$/.test(cleanWord)) {
-                                extractedCodes.push(cleanWord);
+                            // Converte para minúscula apenas para conferir na lista negra
+                            const wordParaChecagem = word.toLowerCase();
+                            
+                            if (!blackList.includes(wordParaChecagem)) {
+                                // Adiciona o código mantendo as letras maiúsculas originais (ex: Idrgqs)
+                                extractedCodes.push(word);
                             }
                         }
-                    });
+                    });  
                 }
 
                 extractedCodes = [...new Set(extractedCodes)];
