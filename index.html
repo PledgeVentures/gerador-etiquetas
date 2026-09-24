@@ -26,7 +26,7 @@
 
             @page {
                 size: A4;
-                margin: 10mm; 
+                margin: 5mm; /* Margem reduzida para dar mais espaço para a grade */
             }
 
             #print-container {
@@ -35,12 +35,13 @@
 
             .page-a4 {
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(13, 1fr);
-                height: 277mm; 
+                grid-template-columns: repeat(5, 1fr); /* 5 colunas */
+                grid-template-rows: repeat(12, 1fr); /* 12 fileiras */
+                height: 285mm; /* Altura segura (297mm do A4 - 10mm de margens globais - 2mm de folga) para evitar página extra */
                 width: 100%;
                 gap: 0;
                 break-after: page; 
+                page-break-after: always; /* Garantia extra de quebra de página */
             }
 
             .voucher-box {
@@ -50,21 +51,23 @@
                 justify-content: center;
                 align-items: center;
                 box-sizing: border-box;
-                padding: 8px;
+                padding: 4px; /* Reduzido para caber melhor na grade 5x12 */
                 text-align: center;
+                overflow: hidden;
             }
 
             .voucher-title {
-                font-size: 12px;
+                font-size: 8px; /* Fonte menor para caixas mais estreitas */
                 color: #555;
-                margin-bottom: 5px;
+                margin-bottom: 2px;
                 text-transform: uppercase;
+                white-space: nowrap;
             }
 
             .voucher-code {
-                font-size: 20px;
+                font-size: 14px; /* Fonte ajustada para 5 colunas */
                 font-weight: bold;
-                letter-spacing: 2px;
+                letter-spacing: 1px;
                 color: #000;
             }
         }
@@ -124,8 +127,8 @@
         const printContainer = document.getElementById('print-container');
         const printButton = document.getElementById('print-button');
 
-        const COLS = 3;
-        const ROWS = 13;
+        const COLS = 5;
+        const ROWS = 12;
         const VOUCHERS_PER_PAGE = COLS * ROWS; 
 
         fileInput.addEventListener('change', async (event) => {
