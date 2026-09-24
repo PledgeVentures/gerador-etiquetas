@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Etiquetas de Voucher</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Configurações específicas para a hora de imprimir */
+        @media print {
+            #ui-container { display: none !important; }
+            
+            body, html {
+                background-color: white !important;
+                margin: 0;
+                padding: 0;
+            }
+
+            @page {
+                size: A4;
+                margin: 10mm; 
+            }
+
+            #print-container {
+                display: block !important;
+            }
+
+            .page-a4 {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(10, 1fr);
+                height: 277mm; 
+                width: 100%;
+                gap: 0;
+                break-after: page; 
+            }
+
+            .voucher-box {
+                border: 1px dashed #666; 
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                box-sizing: border-box;
+                padding: 10px;
+                text-align: center;
+            }
+
+            .voucher-title {
+                font-size: 12px;
+                color: #555;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+            }
+
+            .voucher-code {
+                font-size: 20px;
+                font-weight: bold;
+                letter-spacing: 2px;
+                color: #000;
+            }
+        }
+
+        #print-container {
+            display: none;
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center">
+
+    <div id="ui-container" class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+        
+        <div class="mb-6 flex justify-center">
+            <svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+        </div>
+
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Gerador de Etiquetas</h1>
+        <p class="text-gray-600 text-sm mb-8">
+            Selecione o arquivo PDF de vouchers. O sistema irá extrair os códigos e preparar a impressão.
+        </p>
+
+        <label for="pdf-upload" class="flex flex-col items-center px-4 py-6 bg-gray-50 text-green-600 rounded-lg shadow-inner border border-gray-200 cursor-pointer hover:bg-green-50 transition-colors">
+            <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <span class="mt-2 text-sm font-semibold leading-normal">Anexar arquivo PDF</span>
+            <input type='file' id="pdf-upload" class="hidden" accept="application/pdf" />
+        </label>
+
+        <div id="status-message" class="mt-4 text-sm font-medium h-6"></div>
+
+        <button id="print-button" class="hidden mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimir Etiquetas
+        </button>
+    </div>
+
+    <div id="print-container"></div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const fileInput = document.getElementById('pdf-upload');
+        const statusMessage = document.getElementById('status-message');
+        const printContainer = document.getElementById('print-container');
+        const printButton = document.getElementById('print-button');
+
+        const COLS = 3;
+        const ROWS = 10;
+        const VOUCHERS_PER_PAGE = COLS * ROWS; 
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            printButton.classList.add('hidden');
+            statusMessage.textContent = "Processando PDF...";
+            statusMessage.className = "mt-4 text-sm font-medium text-blue-600";
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                let extractedCodes = [];
+
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    
+                    const words = pageText.split(/[^a-zA-Z0-9]+/);
+                    
+                    words.forEach(word => {
+                        if (word.length === 6) {
+                            const cleanWord = word.toLowerCase();
+                            const blackList = [
+                                'criado', 'codigo', 'código', 'numero', 'status', 
+                                'exclui', 'editar', 'baixar', 'fechar', 'acesso', 
+                                'cartao', 'voltar', 'salvar', 'gerado', 'ativos', 'plano'
+                            ];
+                            
+                            if (!blackList.includes(cleanWord) && /^[a-z0-9]{6}$/.test(cleanWord)) {
+                                extractedCodes.push(cleanWord);
+                            }
+                        }
+                    });
+                }
+
+                extractedCodes = [...new Set(extractedCodes)];
+
+                if (extractedCodes.length === 0) {
+                    throw new Error("Nenhum código encontrado. Verifique o arquivo.");
+                }
+
+                generatePrintLayout(extractedCodes);
+
+                statusMessage.textContent = `${extractedCodes.length} códigos encontrados!`;
+                statusMessage.className = "mt-4 text-sm font-medium text-green-600";
+                printButton.classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                statusMessage.textContent = "Erro: " + error.message;
+                statusMessage.className = "mt-4 text-sm font-medium text-red-600";
+                fileInput.value = "";
+            }
+        });
+
+        printButton.addEventListener('click', () => {
+            window.print();
+        });
+
+        function generatePrintLayout(codes) {
+            printContainer.innerHTML = ''; 
+
+            const totalPages = Math.ceil(codes.length / VOUCHERS_PER_PAGE) || 1; 
+            const totalSlots = totalPages * VOUCHERS_PER_PAGE;
+            
+            const paddedCodes = [...codes];
+            while (paddedCodes.length < totalSlots) {
+                paddedCodes.push(null); 
+            }
+
+            for (let p = 0; p < totalPages; p++) {
+                const pageElement = document.createElement('div');
+                pageElement.className = 'page-a4';
+
+                for (let i = 0; i < VOUCHERS_PER_PAGE; i++) {
+                    const codeIndex = (p * VOUCHERS_PER_PAGE) + i;
+                    const code = paddedCodes[codeIndex];
+
+                    const voucherBox = document.createElement('div');
+                    voucherBox.className = 'voucher-box';
+
+                    if (code) {
+                        voucherBox.innerHTML = `
+                            <div class="voucher-title">Voucher de Acesso</div>
+                            <div class="voucher-code">${code}</div>
+                        `;
+                    }
+
+                    pageElement.appendChild(voucherBox);
+                }
+
+                printContainer.appendChild(pageElement);
+            }
+        }
+    </script>
+  <footer>
+    <hr>
+    <small style="color: #777;">
+        &copy; 2026 Pledge Ventures. Para reportar um bug ou contratar nossos serviços, entre em contato: <br>
+        WhatsApp: <a href="https://wa.me/5519981819846" style="color: #777;">(19) 9 8181-9846</a> | 
+        E-mail: <a href="mailto:consulting@pledge.ventures" style="color: #777;">consulting@pledge.ventures</a>
+    </small>
+</footer>
+</body>
+</html>
