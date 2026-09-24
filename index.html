@@ -7,7 +7,7 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         body {
             background-color: #f3f4f6;
@@ -148,7 +148,7 @@
 
     <!-- Rodapé / Footer Fixo na Tela -->
     <footer id="main-footer" class="w-full text-center py-6 text-gray-500 text-xs sm:text-sm">
-        <p> Gerador de Vouchers V1.7 ©2026 Pledge Tecnologias Brasil LTDA | CNPJ: 58.129.596/0001-04 </p> 
+        <p> Gerador de Vouchers V1.8 © 2026 Pledge Tecnologias Brasil LTDA, CNPJ: 58.129.596/0001-04 </p> 
             <p> Para reportar um bug ou contratar nossos serviços, entre em contato:</p>
         <p class="mt-1">WhatsApp: (19) 9 8181-9846 | E-mail: consulting@pledge.ventures</p>
     </footer>
@@ -180,24 +180,44 @@
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
                 let extractedCodes = [];
 
+                // Lista negra unificada (sem acentos)
+                const blackList = [
+                    'criado', 'codigo', 'numero', 'status', 
+                    'exclui', 'editar', 'baixar', 'fechar', 'acesso', 
+                    'cartao', 'voltar', 'salvar', 'gerado', 'ativos', 'plano', 'planos'
+                ];
+
                 for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                     const page = await pdf.getPage(pageNum);
                     const textContent = await page.getTextContent();
                     
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    
+                    let pageText = textContent.items.map(item => item.str).join(' ');
+
+                    // Se o PDF for baseado em imagem (texto nativo vazio), ativa o OCR do Tesseract para esta página
+                    if (!pageText || pageText.trim().length < 5) {
+                        statusMessage.textContent = `Lendo PDF gráfico (Página ${pageNum}) com IA...`;
+                        const scale = 2.5;
+                        const viewport = page.getViewport({ scale: scale });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        
+                        // Executa o reconhecimento ótico de caracteres
+                        const worker = await Tesseract.createWorker('por');
+                        const { data: { text } } = await worker.recognize(canvas);
+                        await worker.terminate();
+                        
+                        pageText = text;
+                    }
+
                     // 1. Remove acentos (CÓDIGO vira CODIGO) e substitui símbolos por espaços
                     const cleanText = pageText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, ' ');
                     
                     // 2. Fatia o texto em palavras isoladas
                     const words = cleanText.split(/\s+/);
-                    
-                    // 3. Sua lista negra unificada (sem acentos)
-                    const blackList = [
-                        'criado', 'codigo', 'numero', 'status', 
-                        'exclui', 'editar', 'baixar', 'fechar', 'acesso', 
-                        'cartao', 'voltar', 'salvar', 'gerado', 'ativos', 'plano', 'planos'
-                    ];
                     
                     words.forEach(word => {
                         // 4. Regra regex que aceita maiúsculas, minúsculas e números
